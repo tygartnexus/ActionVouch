@@ -1,5 +1,7 @@
 # ActionVouch
 
+[![CI](https://github.com/tygartnexus/ActionVouch/actions/workflows/ci.yml/badge.svg)](https://github.com/tygartnexus/ActionVouch/actions/workflows/ci.yml) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE) [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
+
 Local-first AI agent **risk audit and approval console**. ActionVouch inventories the
 AI agents and automations a business runs, records attempted actions, applies local
 policy rules, surfaces evidence gaps, and generates an executive risk report - entirely
