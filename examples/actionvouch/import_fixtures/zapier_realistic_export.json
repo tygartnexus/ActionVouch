@@ -1,0 +1,35 @@
+{
+  "template_version": "actionvouch.zapier_summary.v1",
+  "redaction_confirmation": "Export was redacted: no Zapier account IDs, task history payloads, API keys, OAuth tokens, or customer identifiers are included.",
+  "platform": "Zapier",
+  "zaps": [
+    {
+      "workflow_id": "zap_lead_triage_redacted",
+      "name": "Lead Triage To CRM And Draft Follow-Up",
+      "owner": "Revenue Operations Lead",
+      "business_purpose": "Classify inbound leads, update CRM lifecycle stage, and draft a follow-up email for human review.",
+      "trigger_summary": "New redacted lead form submission.",
+      "tools": ["web_form", "crm_tool", "email_tool", "llm_classifier"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "draft", "crm_write", "customer_message"],
+      "approval_expectations": "Human approval required before CRM write or customer message.",
+      "external_effects": ["Can update CRM fields", "Can draft or send customer email depending on account permissions"],
+      "steps": [
+        {"app": "Web Form", "action": "new_submission", "effect": "observe"},
+        {"app": "LLM Classifier", "action": "classify_lead", "effect": "draft"},
+        {"app": "CRM", "action": "update_lifecycle_stage", "effect": "crm_write"},
+        {"app": "Email", "action": "draft_follow_up", "effect": "customer_message"}
+      ],
+      "evidence": [
+        {
+          "evidence_id": "ev_zapier_redacted_export",
+          "source_type": "manual_note",
+          "summary": "Redacted Zapier export summary reviewed for controlled pilot fixture coverage.",
+          "limitation": "Not a live Zapier API pull and not an admin permission export.",
+          "satisfies": ["owner", "purpose", "action_summary", "crm_record_summary"]
+        }
+      ],
+      "unknowns": ["Exact Zapier connection scopes are unknown.", "Whether the email step can send without human approval is unknown."]
+    }
+  ]
+}

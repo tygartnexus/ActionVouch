@@ -1,0 +1,28 @@
+{
+  "template_version": "actionvouch.n8n_summary.v1",
+  "redaction_confirmation": "Workflow URLs, credential names, payloads, and tokens have been redacted.",
+  "platform": "n8n",
+  "workflows": [
+    {
+      "workflow_id": "n8n_customer_summary_1",
+      "name": "Support Ticket Triage",
+      "owner": "Support Lead",
+      "business_purpose": "Classify support tickets and draft internal notes.",
+      "trigger_summary": "New support ticket event with customer details redacted.",
+      "tools": ["support_desk_tool", "llm_tool", "crm_tool"],
+      "data_classes": ["customer_pii", "support"],
+      "action_classes": ["observe", "draft", "crm_write"],
+      "approval_expectations": "Human review required before CRM updates.",
+      "external_effects": ["May update internal ticket or CRM fields"],
+      "evidence": [
+        {
+          "evidence_id": "n8n_owner_summary_1",
+          "source_type": "owner_statement",
+          "summary": "Owner-provided workflow summary.",
+          "limitation": "No n8n execution export reviewed."
+        }
+      ],
+      "unknowns": ["Whether workflow credentials allow write access is unknown."]
+    }
+  ]
+}

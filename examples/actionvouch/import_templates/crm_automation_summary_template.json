@@ -1,0 +1,28 @@
+{
+  "template_version": "actionvouch.crm_automation_summary.v1",
+  "redaction_confirmation": "Customer names, emails, record IDs, and field values have been redacted.",
+  "platform": "CRM",
+  "automations": [
+    {
+      "automation_id": "crm_customer_summary_1",
+      "name": "Lifecycle Stage Update",
+      "owner": "Revenue Operations",
+      "business_purpose": "Update lifecycle stage after a verified customer action.",
+      "trigger_summary": "Redacted customer status condition.",
+      "tools": ["crm_tool"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "crm_write"],
+      "approval_expectations": "Owner approval required before enabling AI-suggested writes.",
+      "external_effects": ["Changes CRM fields used for reporting or outreach"],
+      "evidence": [
+        {
+          "evidence_id": "crm_owner_summary_1",
+          "source_type": "owner_statement",
+          "summary": "Owner-provided CRM automation summary.",
+          "limitation": "No live CRM workflow export reviewed."
+        }
+      ],
+      "unknowns": ["Downstream automation triggered by the field change is unknown."]
+    }
+  ]
+}

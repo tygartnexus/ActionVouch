@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+
+# Secrets / local env (NEVER commit)
+.env
+.env.*
+*.env
+!.env.example
+
+# OAuth / credential material (NEVER commit)
+*token*.json
+client_secret*.json
+credentials.json
+secrets/
+
+# Keys / certificates (NEVER commit)
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa
+id_ed25519
+*.netrc
+
+# Local scratch / ad-hoc test artifacts
+redteam_*
+scratch_*

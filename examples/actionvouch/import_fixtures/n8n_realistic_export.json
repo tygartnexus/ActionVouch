@@ -1,0 +1,35 @@
+{
+  "template_version": "actionvouch.n8n_summary.v1",
+  "redaction_confirmation": "Workflow URLs, credential names, tokens, execution IDs, and payload samples have been removed.",
+  "platform": "n8n",
+  "workflows": [
+    {
+      "workflow_id": "n8n_ticket_triage_redacted",
+      "name": "Ticket Triage And Internal Escalation",
+      "owner": "Support Lead",
+      "business_purpose": "Classify support tickets, summarize customer context, and draft an internal escalation note.",
+      "trigger_summary": "New redacted support ticket event.",
+      "tools": ["support_desk", "knowledge_base", "llm_tool", "crm_tool"],
+      "data_classes": ["customer_pii", "support"],
+      "action_classes": ["observe", "draft", "crm_write", "support_response"],
+      "approval_expectations": "Human approval required before CRM update or customer-facing support response.",
+      "external_effects": ["May update internal CRM or support fields"],
+      "nodes": [
+        {"type": "trigger", "name": "Ticket Created"},
+        {"type": "llm", "name": "Summarize Ticket"},
+        {"type": "crm", "name": "Update Priority"},
+        {"type": "support", "name": "Draft Response"}
+      ],
+      "evidence": [
+        {
+          "evidence_id": "ev_n8n_redacted_export",
+          "source_type": "manual_note",
+          "summary": "Redacted n8n workflow summary reviewed for importer fixture coverage.",
+          "limitation": "No n8n credential scope or execution export is attached.",
+          "satisfies": ["owner", "purpose", "action_summary", "customer_context"]
+        }
+      ],
+      "unknowns": ["Credential write scopes are unknown.", "Downstream automations after CRM priority update are unknown."]
+    }
+  ]
+}

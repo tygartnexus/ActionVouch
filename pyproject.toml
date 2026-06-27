@@ -1,0 +1,80 @@
+[project]
+name = "actionvouch"
+dynamic = ["version"]
+description = "ActionVouch - local-first AI agent risk audit and approval console."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Tygart Nexus" }]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+keywords = ["ai-agents", "security", "risk-audit", "mcp", "local-first", "ai-governance"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+]
+# ActionVouch runs on the Python standard library alone - no runtime
+# third-party dependencies, no network calls, no live external actions.
+dependencies = []
+
+[project.optional-dependencies]
+# Real-browser smoke evidence (dashboard/console). Optional and test-only: the
+# shipped runtime stays standard-library only and offline. After installing,
+# fetch the browser binary once with `python -m playwright install chromium`.
+browser = [
+  "playwright>=1.40",
+]
+# Build a one-file desktop executable of the self-serve app (see
+# packaging/actionvouch.spec). Build-time only; not a runtime dependency.
+package = [
+  "pyinstaller>=6.0",
+]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=4.1",
+  "black>=24.1",
+  "ruff>=0.3",
+  "mypy>=1.8",
+  "playwright>=1.40",
+]
+
+[project.scripts]
+actionvouch = "actionvouch.cli:main"
+actionvouch-app = "actionvouch.launcher:main"
+
+[project.urls]
+Homepage = "https://github.com/tygartnexus/ActionVouch"
+Repository = "https://github.com/tygartnexus/ActionVouch"
+Issues = "https://github.com/tygartnexus/ActionVouch/issues"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "actionvouch._version.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["actionvouch*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.black]
+extend-exclude = '''
+/(
+  \.venv
+  | build
+  | dist
+)/
+'''

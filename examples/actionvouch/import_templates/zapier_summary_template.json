@@ -1,0 +1,28 @@
+{
+  "template_version": "actionvouch.zapier_summary.v1",
+  "redaction_confirmation": "Zap history, sample payloads, account identifiers, and secrets have been redacted.",
+  "platform": "Zapier",
+  "zaps": [
+    {
+      "workflow_id": "zap_customer_summary_1",
+      "name": "Lead Intake To CRM",
+      "owner": "Sales Operations",
+      "business_purpose": "Create or update CRM records from approved lead forms.",
+      "trigger_summary": "Redacted lead form submission.",
+      "tools": ["form_tool", "crm_tool", "email_tool"],
+      "data_classes": ["customer_pii"],
+      "action_classes": ["observe", "crm_write", "customer_message"],
+      "approval_expectations": "CRM writes require owner review until live permissions are verified.",
+      "external_effects": ["Creates or updates CRM records", "May draft email follow-up"],
+      "evidence": [
+        {
+          "evidence_id": "zap_owner_summary_1",
+          "source_type": "owner_statement",
+          "summary": "Owner-provided Zap summary with redacted trigger and actions.",
+          "limitation": "No live Zapier admin export reviewed."
+        }
+      ],
+      "unknowns": ["Whether the email step can send automatically is unknown."]
+    }
+  ]
+}

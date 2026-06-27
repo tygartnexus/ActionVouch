@@ -1,0 +1,26 @@
+{
+  "_note": "Redacted example MCP client config with several servers. Static-scan fixture for ActionVouch; no live server is contacted.",
+  "mcpServers": {
+    "docs": {
+      "command": "npx",
+      "args": ["-y", "@example/mcp-docs"],
+      "tools": [
+        {"name": "search_docs", "description": "Search public documentation", "annotations": {"readOnlyHint": true, "openWorldHint": true}}
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@example/mcp-github"],
+      "env": {"GITHUB_TOKEN": "<set-in-environment>"},
+      "tools": [
+        {"name": "search_issues", "description": "Search issues in a repository", "annotations": {"readOnlyHint": true}},
+        {"name": "create_pull_request", "description": "Open a pull request", "annotations": {"readOnlyHint": false}},
+        {"name": "merge_pull_request", "description": "Merge a pull request", "annotations": {"readOnlyHint": false, "destructiveHint": true}}
+      ]
+    },
+    "web_remote": {
+      "type": "sse",
+      "url": "https://mcp.example.com/web"
+    }
+  }
+}

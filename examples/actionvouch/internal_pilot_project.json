@@ -1,0 +1,151 @@
+{
+  "project_id": "av_internal_pilot",
+  "name": "Accuracy Framework Internal Pilot",
+  "version": "actionvouch.audit_project.v1",
+  "created_at": "2026-06-19T09:00:00-04:00",
+  "updated_at": "2026-06-19T09:00:00-04:00",
+  "scope": "Internal local-only pilot for the Accuracy, Evidence, and Honest Feedback framework. No live customer data, credentials, payments, or external writes.",
+  "response_mode": "evidence_based_answer",
+  "assumptions": [
+    "The pilot uses local fixture evidence and current repository files only.",
+    "The pilot is intended to test response-quality behavior, not prove public SaaS readiness."
+  ],
+  "unknowns": [
+    "No paid customer telemetry is attached.",
+    "No external legal review is attached.",
+    "No live connector permission export is attached."
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev_response_quality_plan",
+      "source_type": "local_file",
+      "source_ref": "actionvouch/response_quality.py",
+      "summary": "Implementation and pilot plan for Accuracy, Evidence, and Honest Feedback framework.",
+      "limitation": "Plan document; does not prove implementation or customer readiness by itself.",
+      "confidence": 0.75,
+      "collected_at": "2026-06-19T09:00:00-04:00",
+      "reviewer": "Internal pilot",
+      "satisfies": ["owner", "purpose", "action_summary", "human_owner"]
+    },
+    {
+      "evidence_id": "ev_response_quality_module",
+      "source_type": "local_file",
+      "source_ref": "actionvouch/response_quality.py",
+      "summary": "Shared response-quality contract, modes, guardrails, and prompt templates.",
+      "limitation": "Code evidence still requires tests and adversarial review before buyer use.",
+      "confidence": 0.8,
+      "collected_at": "2026-06-19T09:00:00-04:00",
+      "reviewer": "Internal pilot",
+      "satisfies": ["policy_rule", "purpose"]
+    },
+    {
+      "evidence_id": "ev_missing_customer_telemetry",
+      "source_type": "missing_evidence",
+      "source_ref": "",
+      "summary": "Paid customer telemetry and buyer outcome data are not attached.",
+      "limitation": "Commercial demand and customer impact cannot be treated as verified.",
+      "confidence": 0.35,
+      "collected_at": "2026-06-19T09:00:00-04:00",
+      "reviewer": "Internal pilot",
+      "satisfies": []
+    },
+    {
+      "evidence_id": "ev_missing_live_permissions",
+      "source_type": "missing_evidence",
+      "source_ref": "",
+      "summary": "Live connector OAuth scopes and admin exports are not attached.",
+      "limitation": "Permission boundaries cannot be treated as verified.",
+      "confidence": 0.35,
+      "collected_at": "2026-06-19T09:00:00-04:00",
+      "reviewer": "Internal pilot",
+      "satisfies": []
+    }
+  ],
+  "policies": [
+    {
+      "policy_id": "response_quality_default",
+      "name": "Response quality default gate",
+      "applies_to": ["all_agents"],
+      "blocked_actions": ["file_delete", "finance_action", "payment_refund"],
+      "approval_required_actions": [
+        "compliance_sensitive_claim",
+        "customer_message",
+        "external_api_call",
+        "legal_sensitive_claim",
+        "public_publish"
+      ],
+      "allowed_actions": ["observe", "draft"],
+      "evidence_required": ["owner", "purpose", "tool_permissions", "action_summary"],
+      "human_owner_required": true,
+      "retention_requirement": "local_audit_record",
+      "review_cadence": "per_pilot_run"
+    }
+  ],
+  "tools": [
+    {
+      "tool_id": "review_cli",
+      "name": "Local Review CLI",
+      "system": "Local workstation",
+      "permission_type": "local_read_write_possible",
+      "data_access": ["local_project_files"],
+      "actions_supported": ["observe", "draft", "external_api_call"],
+      "external_effect": false,
+      "credential_owner": "Founder",
+      "risk_level": "medium",
+      "notes": "Pilot uses local CLI commands only. Live external connectors remain out of scope.",
+      "connector_type": "manual",
+      "oauth_scopes": [],
+      "evidence": ["ev_response_quality_module", "ev_missing_live_permissions"],
+      "unknowns": ["Exact future live connector scopes are not attached."]
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "accuracy_framework_reviewer",
+      "name": "Accuracy Framework Reviewer",
+      "owner": "Founder",
+      "business_purpose": "Review ActionVouch outputs for unsupported claims, missing evidence, and unsafe certainty.",
+      "provider": "local",
+      "model_or_runtime": "deterministic_or_configured_llm",
+      "tools": ["review_cli"],
+      "data_classes": ["local_project_files"],
+      "action_classes": ["observe", "draft", "compliance_sensitive_claim"],
+      "autonomy_level": "act_with_approval",
+      "risk_level": "high",
+      "approval_policy_id": "response_quality_default",
+      "status": "pilot_validation",
+      "last_reviewed_at": "2026-06-19",
+      "evidence": ["ev_response_quality_plan", "ev_response_quality_module"],
+      "unknowns": ["Live LLM adherence still requires deterministic validation and adversarial review."]
+    }
+  ],
+  "action_events": [
+    {
+      "event_id": "evt_internal_pilot_quality_review",
+      "agent_id": "accuracy_framework_reviewer",
+      "timestamp": "2026-06-19T09:15:00-04:00",
+      "request_summary": "Review whether ActionVouch is ready for a controlled pilot without overstating evidence.",
+      "enhanced_prompt_hash": "internal_pilot_fixture_hash",
+      "retrieved_sources": ["ev_response_quality_plan", "ev_response_quality_module"],
+      "tool_called": "review_cli",
+      "action_class": "compliance_sensitive_claim",
+      "action_payload_summary": "Draft-only review of readiness claims; no customer-facing publication or live action.",
+      "policy_id": "response_quality_default",
+      "approval_state": "needs_review",
+      "approver": "",
+      "outcome": "draft_not_published",
+      "risk_flags": ["unsupported_claim_risk", "missing_customer_telemetry", "missing_legal_review"],
+      "evidence": [
+        "ev_response_quality_plan",
+        "ev_response_quality_module",
+        "ev_missing_customer_telemetry",
+        "ev_missing_live_permissions"
+      ],
+      "unknowns": [
+        "No buyer acceptance evidence is attached.",
+        "No counsel review evidence is attached."
+      ]
+    }
+  ],
+  "capability_signals": []
+}

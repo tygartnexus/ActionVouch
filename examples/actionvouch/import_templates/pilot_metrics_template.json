@@ -1,0 +1,44 @@
+{
+  "template_version": "actionvouch.pilot_metrics.v1",
+  "redaction_confirmation": "No customer-sensitive details are included in these metrics.",
+  "pilot_id": "pilot_metrics_example_1",
+  "owner": "Pilot Operator",
+  "business_purpose": "Measure whether the controlled pilot delivered a useful AI agent risk audit without converting customer-sensitive details into reusable learning.",
+  "tools": ["ActionVouch local CLI", "Markdown report", "JSON report", "static dashboard export"],
+  "data_classes": ["redacted_business_workflow_summary", "pilot_outcome_metrics"],
+  "action_classes": ["observe", "draft"],
+  "approval_expectations": "Founder review required before pilot metrics become product claims or internal learning input.",
+  "customer_segment": "founder_led_services_business",
+  "audit_started_at": "2026-06-18T09:00:00-04:00",
+  "audit_completed_at": "2026-06-23T17:00:00-04:00",
+  "time_to_complete_audit_hours": 40,
+  "agents_reviewed": 6,
+  "tools_reviewed": 5,
+  "action_events_reviewed": 12,
+  "high_or_critical_risks": 4,
+  "evidence_gaps": 7,
+  "blocked_actions": 2,
+  "customer_prioritized_fixes": [
+    "Require human approval before customer messages.",
+    "Document CRM write permissions.",
+    "Disable file deletion for AI-assisted workflows."
+  ],
+  "willingness_to_pay_signal": {
+    "status": "unproven_until_paid_or_signed",
+    "price_presented_usd": null,
+    "customer_response": "example_only_not_market_proof",
+    "evidence_reference": "missing_evidence:paid_order_or_signed_agreement_not_attached"
+  },
+  "evidence": [
+    {
+      "evidence_id": "pilot_metrics_example_evidence_1",
+      "source_type": "manual_note",
+      "summary": "Example metric structure for controlled pilot review.",
+      "limitation": "Example data is not customer proof."
+    }
+  ],
+  "unknowns": ["Actual willingness to pay remains unknown until a paid order or signed agreement is attached."],
+  "outcome_summary": "Example metrics structure for pilot review.",
+  "learning_feedback_allowed": false,
+  "learning_feedback_notes": "Use only approved, non-sensitive summaries for internal learning."
+}

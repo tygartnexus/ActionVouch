@@ -1,0 +1,28 @@
+{
+  "template_version": "actionvouch.make_summary.v1",
+  "redaction_confirmation": "Scenario IDs, sample payloads, account identifiers, and secrets have been redacted.",
+  "platform": "Make",
+  "scenarios": [
+    {
+      "scenario_id": "make_customer_summary_1",
+      "name": "Invoice Follow-Up Draft",
+      "owner": "Finance Operations",
+      "business_purpose": "Draft invoice follow-up messages for human review.",
+      "trigger_summary": "Invoice status change with customer details redacted.",
+      "tools": ["accounting_tool", "email_tool"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "draft", "customer_message"],
+      "approval_expectations": "Human approval required before any customer message.",
+      "external_effects": ["May draft or send customer email depending on account permissions"],
+      "evidence": [
+        {
+          "evidence_id": "make_owner_summary_1",
+          "source_type": "owner_statement",
+          "summary": "Owner-provided scenario summary.",
+          "limitation": "No live Make scenario export reviewed."
+        }
+      ],
+      "unknowns": ["Send permissions are unknown without a reviewed admin export."]
+    }
+  ]
+}

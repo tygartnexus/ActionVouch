@@ -1,0 +1,26 @@
+{
+  "template_version": "actionvouch.mcp_config_summary.v1",
+  "redaction_confirmation": "Server URLs, tokens, secrets, file paths, and customer identifiers have been redacted or summarized.",
+  "mcp_servers": [
+    {
+      "server_id": "mcp_customer_summary_1",
+      "name": "CRM MCP Server",
+      "owner": "Engineering Lead",
+      "business_purpose": "Expose selected CRM lookup and update tools to an AI assistant.",
+      "tools": ["crm_lookup", "crm_update"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "crm_write", "external_api_call"],
+      "approval_expectations": "Writes and external API calls require human approval.",
+      "external_effects": ["Can call CRM APIs when authorized"],
+      "evidence": [
+        {
+          "evidence_id": "mcp_owner_summary_1",
+          "source_type": "owner_statement",
+          "summary": "Owner-provided MCP capability summary.",
+          "limitation": "No live MCP configuration or auth scope export reviewed."
+        }
+      ],
+      "unknowns": ["Exact tool permission boundaries are unknown."]
+    }
+  ]
+}

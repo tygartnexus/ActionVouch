@@ -1,0 +1,16 @@
+{
+  "_note": "Redacted example MCP client config. Static-scan fixture for ActionVouch; env values are placeholders and are never read by the scanner.",
+  "mcpServers": {
+    "crm": {
+      "command": "python",
+      "args": ["-m", "example_crm_mcp"],
+      "env": {"CRM_API_TOKEN": "<set-in-environment>", "CRM_BASE_URL": "<set-in-environment>"},
+      "tools": [
+        {"name": "lookup_customer", "description": "Look up a customer by email address", "annotations": {"readOnlyHint": true}},
+        {"name": "update_customer", "description": "Update a customer record", "annotations": {"readOnlyHint": false}},
+        {"name": "delete_customer", "description": "Delete a customer record permanently", "annotations": {"destructiveHint": true}},
+        {"name": "send_invoice", "description": "Send an invoice to a customer payment account"}
+      ]
+    }
+  }
+}

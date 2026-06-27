@@ -1,0 +1,10 @@
+{
+  "_note": "Redacted example MCP client config. Remote HTTP server with no static tool catalog; the scanner reports it as tools_not_enumerated (unknown), never as safe.",
+  "mcpServers": {
+    "analytics_remote": {
+      "type": "http",
+      "url": "https://mcp.example.internal/analytics",
+      "env": {"ANALYTICS_BEARER_TOKEN": "<set-in-environment>"}
+    }
+  }
+}

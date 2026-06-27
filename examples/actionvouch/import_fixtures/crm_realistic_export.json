@@ -1,0 +1,30 @@
+{
+  "template_version": "actionvouch.crm_automation_summary.v1",
+  "redaction_confirmation": "CRM record IDs, contact names, email addresses, field values, tokens, and account IDs have been redacted.",
+  "platform": "HubSpot",
+  "automations": [
+    {
+      "automation_id": "crm_lifecycle_update_redacted",
+      "name": "Lifecycle Stage Update From AI Triage",
+      "owner": "Sales Operations",
+      "business_purpose": "Update lifecycle stage after AI-assisted lead triage and owner confirmation.",
+      "trigger_summary": "Redacted lead status condition.",
+      "tools": ["crm_tool", "llm_tool"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "draft", "crm_write"],
+      "approval_expectations": "Owner approval required before AI-suggested CRM writes.",
+      "external_effects": ["Changes CRM fields used for reporting and follow-up workflows"],
+      "properties_touched": ["lifecycle_stage_redacted", "lead_score_redacted"],
+      "evidence": [
+        {
+          "evidence_id": "ev_crm_redacted_export",
+          "source_type": "manual_note",
+          "summary": "Redacted CRM automation export summary reviewed for importer fixture coverage.",
+          "limitation": "No live CRM private app scope export is attached.",
+          "satisfies": ["owner", "purpose", "action_summary", "crm_record_summary", "change_reason"]
+        }
+      ],
+      "unknowns": ["Downstream workflow triggers are unknown.", "Private app scopes are unknown."]
+    }
+  ]
+}

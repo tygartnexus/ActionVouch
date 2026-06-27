@@ -1,0 +1,14 @@
+{
+  "_note": "Redacted example MCP client config. Static-scan fixture for ActionVouch; no live server is contacted, started, or queried.",
+  "mcpServers": {
+    "filesystem_readonly": {
+      "command": "npx",
+      "args": ["-y", "@example/mcp-filesystem", "--readonly", "/srv/docs"],
+      "tools": [
+        {"name": "read_file", "description": "Read a file from the allowed directory", "annotations": {"readOnlyHint": true, "openWorldHint": false}},
+        {"name": "list_directory", "description": "List directory entries", "annotations": {"readOnlyHint": true, "openWorldHint": false}},
+        {"name": "search_files", "description": "Search file contents in the allowed directory", "annotations": {"readOnlyHint": true, "openWorldHint": false}}
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "project_id": "av_incomplete_fixture",
+  "name": "Incomplete ActionVouch Fixture",
+  "version": "actionvouch.audit_project.v1",
+  "created_at": "2026-06-18T07:00:00-04:00",
+  "updated_at": "2026-06-18T07:00:00-04:00",
+  "scope": "Invalid fixture for fail-closed validation tests.",
+  "agents": [
+    {
+      "agent_id": "agent_missing_owner",
+      "name": "Agent Missing Owner",
+      "owner": "",
+      "business_purpose": "",
+      "provider": "unknown",
+      "model_or_runtime": "unknown",
+      "tools": ["unknown_tool"],
+      "data_classes": [],
+      "action_classes": ["customer_message"],
+      "risk_level": "high",
+      "approval_policy_id": "missing_policy",
+      "status": "unknown",
+      "evidence": [],
+      "unknowns": []
+    }
+  ],
+  "tools": [],
+  "policies": [],
+  "action_events": [],
+  "evidence": [],
+  "assumptions": [],
+  "unknowns": []
+}

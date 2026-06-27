@@ -1,0 +1,29 @@
+{
+  "template_version": "actionvouch.manual_agent_inventory.v1",
+  "redaction_confirmation": "No credentials, secrets, payment card data, health information, or unrelated legal matter details are included.",
+  "source_summary": "Owner-provided manual inventory for controlled pilot intake.",
+  "agents": [
+    {
+      "agent_id": "customer_supplied_agent_1",
+      "name": "Support Drafting Agent",
+      "owner": "Operations Lead",
+      "business_purpose": "Draft support replies for human review.",
+      "provider_or_runtime": "Local LLM or workspace AI tool",
+      "model_or_runtime": "redacted_model_or_runtime",
+      "tools": ["email_tool", "crm_tool"],
+      "data_classes": ["customer_pii", "support"],
+      "action_classes": ["observe", "draft", "customer_message", "crm_write"],
+      "approval_expectations": "Human approval required before customer messages or CRM writes.",
+      "known_risks": ["Customer message could be sent without source verification."],
+      "evidence": [
+        {
+          "evidence_id": "manual_inventory_note_1",
+          "source_type": "owner_statement",
+          "summary": "Owner says the agent drafts replies and does not send without review.",
+          "limitation": "Not verified against live admin permissions."
+        }
+      ],
+      "unknowns": ["Exact tool scopes are not attached."]
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "project_id": "av_sample_services_co",
+  "name": "Sample Services Co AI Agent Risk Audit",
+  "version": "actionvouch.audit_project.v1",
+  "created_at": "2026-06-18T07:00:00-04:00",
+  "updated_at": "2026-06-18T07:00:00-04:00",
+  "scope": "Local fixture for ActionVouch MVP validation. No real customer data or credentials.",
+  "assumptions": [
+    "Workflow records were supplied by manual intake, not live connector inspection.",
+    "Tool permissions should be verified against current admin exports before customer delivery."
+  ],
+  "unknowns": [
+    "Current live workspace permissions are not attached.",
+    "No customer interview evidence is attached to prove willingness to pay."
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev_manual_intake",
+      "source_type": "manual_note",
+      "source_ref": "examples/actionvouch/manual_intake_sample.md",
+      "summary": "Owner-supplied manual inventory of AI workflows.",
+      "limitation": "Not independently verified against live SaaS admin consoles.",
+      "confidence": 0.7,
+      "collected_at": "2026-06-18T07:00:00-04:00",
+      "reviewer": "ActionVouch fixture",
+      "satisfies": ["owner", "purpose", "action_summary", "customer_context", "crm_record_summary", "change_reason"]
+    },
+    {
+      "evidence_id": "ev_policy_default",
+      "source_type": "local_file",
+      "source_ref": "actionvouch/policies.py",
+      "summary": "Default local policy template used for observe-only and approval decisions.",
+      "limitation": "Operational guardrail only; not legal advice.",
+      "confidence": 0.85,
+      "collected_at": "2026-06-18T07:00:00-04:00",
+      "reviewer": "ActionVouch fixture",
+      "satisfies": ["policy_rule", "retention_requirement"]
+    },
+    {
+      "evidence_id": "ev_missing_live_permissions",
+      "source_type": "missing_evidence",
+      "source_ref": "",
+      "summary": "Live admin permission export is not attached.",
+      "limitation": "Tool scopes cannot be treated as verified until an admin export or screenshot is reviewed.",
+      "confidence": 0.4,
+      "collected_at": "2026-06-18T07:00:00-04:00",
+      "reviewer": "ActionVouch fixture",
+      "satisfies": []
+    }
+  ],
+  "policies": [
+    {
+      "policy_id": "observe_only_default",
+      "name": "Observe-only default",
+      "applies_to": ["all_agents"],
+      "blocked_actions": ["file_delete", "finance_action", "payment_refund"],
+      "approval_required_actions": [
+        "compliance_sensitive_claim",
+        "crm_write",
+        "customer_message",
+        "external_api_call",
+        "file_share",
+        "legal_sensitive_claim",
+        "public_publish",
+        "support_response"
+      ],
+      "allowed_actions": ["observe", "draft"],
+      "evidence_required": ["owner", "purpose", "tool_permissions", "action_summary"],
+      "human_owner_required": true,
+      "retention_requirement": "local_audit_record",
+      "review_cadence": "monthly"
+    },
+    {
+      "policy_id": "customer_communication_approval",
+      "name": "Customer communication approval",
+      "applies_to": ["customer_message", "support_response"],
+      "blocked_actions": [],
+      "approval_required_actions": ["customer_message", "support_response"],
+      "allowed_actions": ["observe", "draft"],
+      "evidence_required": ["customer_context", "source_citations", "human_owner"],
+      "human_owner_required": true,
+      "retention_requirement": "local_audit_record",
+      "review_cadence": "per_event"
+    },
+    {
+      "policy_id": "crm_write_approval",
+      "name": "CRM write approval",
+      "applies_to": ["crm_write"],
+      "blocked_actions": [],
+      "approval_required_actions": ["crm_write"],
+      "allowed_actions": ["observe", "draft"],
+      "evidence_required": ["crm_record_summary", "human_owner", "change_reason"],
+      "human_owner_required": true,
+      "retention_requirement": "local_audit_record",
+      "review_cadence": "per_event"
+    },
+    {
+      "policy_id": "destructive_action_block",
+      "name": "Destructive and financial action block",
+      "applies_to": ["file_delete", "finance_action", "payment_refund"],
+      "blocked_actions": ["file_delete", "finance_action", "payment_refund"],
+      "approval_required_actions": [],
+      "allowed_actions": ["observe", "draft"],
+      "evidence_required": ["human_owner", "business_approval"],
+      "human_owner_required": true,
+      "retention_requirement": "local_audit_record",
+      "review_cadence": "monthly"
+    }
+  ],
+  "tools": [
+    {
+      "tool_id": "gmail_tool",
+      "name": "Gmail Drafting Tool",
+      "system": "Google Workspace",
+      "permission_type": "draft_and_send_possible",
+      "data_access": ["customer_pii", "support"],
+      "actions_supported": ["observe", "draft", "customer_message"],
+      "external_effect": true,
+      "credential_owner": "Ops Lead",
+      "risk_level": "high",
+      "notes": "Fixture assumes send capability may exist but is not live-tested.",
+      "evidence": ["ev_manual_intake", "ev_missing_live_permissions"],
+      "unknowns": ["Exact OAuth scopes are not attached."]
+    },
+    {
+      "tool_id": "crm_tool",
+      "name": "CRM Automation Tool",
+      "system": "HubSpot",
+      "permission_type": "read_write",
+      "data_access": ["customer_pii", "financial"],
+      "actions_supported": ["observe", "crm_write"],
+      "external_effect": true,
+      "credential_owner": "Sales Ops",
+      "risk_level": "high",
+      "notes": "Fixture summary only; no live CRM credentials.",
+      "evidence": ["ev_manual_intake"],
+      "unknowns": []
+    },
+    {
+      "tool_id": "drive_tool",
+      "name": "Drive File Tool",
+      "system": "Google Drive",
+      "permission_type": "read_write",
+      "data_access": ["customer_pii", "legal"],
+      "actions_supported": ["observe", "file_share", "file_delete"],
+      "external_effect": true,
+      "credential_owner": "IT Lead",
+      "risk_level": "critical",
+      "notes": "Fixture records a blocked deletion attempt.",
+      "evidence": ["ev_manual_intake"],
+      "unknowns": []
+    }
+  ],
+  "agents": [
+    {
+      "agent_id": "support_reply_agent",
+      "name": "Support Reply Agent",
+      "owner": "Ops Lead",
+      "business_purpose": "Draft support replies from internal knowledge and ticket context.",
+      "provider": "local_ollama",
+      "model_or_runtime": "qwen3-local",
+      "tools": ["gmail_tool", "crm_tool"],
+      "data_classes": ["customer_pii", "support"],
+      "action_classes": ["observe", "draft", "customer_message", "crm_write"],
+      "risk_level": "high",
+      "approval_policy_id": "customer_communication_approval",
+      "status": "review_required",
+      "last_reviewed_at": "2026-06-18",
+      "evidence": ["ev_manual_intake"],
+      "unknowns": ["Live OAuth scopes are not attached."]
+    },
+    {
+      "agent_id": "file_cleanup_agent",
+      "name": "File Cleanup Agent",
+      "owner": "IT Lead",
+      "business_purpose": "Identify duplicate shared-drive files and draft cleanup recommendations.",
+      "provider": "local_ollama",
+      "model_or_runtime": "qwen3-local",
+      "tools": ["drive_tool"],
+      "data_classes": ["customer_pii", "legal"],
+      "action_classes": ["observe", "draft", "file_delete"],
+      "risk_level": "critical",
+      "approval_policy_id": "destructive_action_block",
+      "status": "blocked_pending_review",
+      "last_reviewed_at": "2026-06-18",
+      "evidence": ["ev_manual_intake", "ev_policy_default"],
+      "unknowns": []
+    }
+  ],
+  "action_events": [
+    {
+      "event_id": "evt_support_draft_001",
+      "agent_id": "support_reply_agent",
+      "timestamp": "2026-06-18T07:05:00-04:00",
+      "request_summary": "Draft a support reply about a billing correction.",
+      "enhanced_prompt_hash": "fixture_hash_support_001",
+      "retrieved_sources": ["ev_manual_intake"],
+      "tool_called": "gmail_tool",
+      "action_class": "customer_message",
+      "action_payload_summary": "Draft email text only; no send action executed.",
+      "policy_id": "customer_communication_approval",
+      "approval_state": "needs_review",
+      "approver": "",
+      "outcome": "draft_not_sent",
+      "risk_flags": ["customer_communication", "missing_live_permission_export"],
+      "evidence": ["ev_manual_intake", "ev_missing_live_permissions"],
+      "unknowns": ["No customer ticket export is attached."]
+    },
+    {
+      "event_id": "evt_crm_write_001",
+      "agent_id": "support_reply_agent",
+      "timestamp": "2026-06-18T07:10:00-04:00",
+      "request_summary": "Update lifecycle stage after support resolution.",
+      "enhanced_prompt_hash": "fixture_hash_crm_001",
+      "retrieved_sources": ["ev_manual_intake"],
+      "tool_called": "crm_tool",
+      "action_class": "crm_write",
+      "action_payload_summary": "Proposed CRM field update; no write executed.",
+      "policy_id": "crm_write_approval",
+      "approval_state": "proposed",
+      "approver": "",
+      "outcome": "not_executed",
+      "risk_flags": ["crm_write_requires_approval"],
+      "evidence": ["ev_manual_intake"],
+      "unknowns": []
+    },
+    {
+      "event_id": "evt_file_delete_001",
+      "agent_id": "file_cleanup_agent",
+      "timestamp": "2026-06-18T07:15:00-04:00",
+      "request_summary": "Delete duplicate customer intake files.",
+      "enhanced_prompt_hash": "fixture_hash_file_001",
+      "retrieved_sources": ["ev_manual_intake"],
+      "tool_called": "drive_tool",
+      "action_class": "file_delete",
+      "action_payload_summary": "Deletion request blocked by policy; no file action executed.",
+      "policy_id": "destructive_action_block",
+      "approval_state": "blocked",
+      "approver": "",
+      "outcome": "blocked_not_executed",
+      "risk_flags": ["destructive_file_action"],
+      "evidence": ["ev_manual_intake", "ev_policy_default"],
+      "unknowns": []
+    }
+  ]
+}

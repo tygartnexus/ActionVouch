@@ -1,0 +1,9 @@
+ActionVouch
+Copyright 2026 Tygart Nexus, LLC
+
+This product includes software developed by Tygart Nexus, LLC.
+
+ActionVouch runs on the Python standard library alone and bundles no
+third-party runtime code. Optional development and packaging extras
+(for example, Playwright and PyInstaller) are installed separately by the
+user and remain under their own respective licenses.

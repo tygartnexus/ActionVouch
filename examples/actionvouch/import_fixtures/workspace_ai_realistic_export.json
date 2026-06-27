@@ -1,0 +1,28 @@
+{
+  "template_version": "actionvouch.workspace_ai_usage.v1",
+  "redaction_confirmation": "Prompts, user identifiers, document names, file IDs, and sensitive source content have been summarized or redacted.",
+  "workspace": "Microsoft 365",
+  "usage_patterns": [
+    {
+      "usage_id": "workspace_doc_summary_redacted",
+      "name": "Workspace Document Summary Assistant",
+      "owner": "Operations Lead",
+      "business_purpose": "Summarize shared documents for internal review before staff meetings.",
+      "tools": ["workspace_ai", "document_storage", "chat_tool"],
+      "data_classes": ["customer_pii", "legal"],
+      "action_classes": ["observe", "draft", "file_share"],
+      "approval_expectations": "Human approval required before generated summaries are shared.",
+      "external_effects": ["May create or share document summaries depending on workspace permissions"],
+      "evidence": [
+        {
+          "evidence_id": "ev_workspace_ai_redacted_export",
+          "source_type": "manual_note",
+          "summary": "Redacted workspace AI usage summary reviewed for importer fixture coverage.",
+          "limitation": "No Microsoft Graph or admin export is attached.",
+          "satisfies": ["owner", "purpose", "action_summary"]
+        }
+      ],
+      "unknowns": ["Sharing inheritance behavior is unknown.", "Workspace AI retention settings are unknown."]
+    }
+  ]
+}

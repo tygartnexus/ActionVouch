@@ -1,0 +1,32 @@
+{
+  "template_version": "actionvouch.mcp_config_summary.v1",
+  "redaction_confirmation": "Server URLs, local file paths, tokens, environment variable names, and customer identifiers have been redacted.",
+  "mcp_servers": [
+    {
+      "server_id": "mcp_crm_server_redacted",
+      "name": "CRM MCP Server",
+      "owner": "Engineering Lead",
+      "business_purpose": "Expose selected CRM lookup and update tools to a local AI assistant.",
+      "tools": ["crm_lookup", "crm_update", "customer_note_search"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "crm_write", "external_api_call"],
+      "approval_expectations": "CRM writes and external API calls require human approval.",
+      "external_effects": ["Can call CRM APIs when authorized"],
+      "tool_manifest": [
+        {"name": "crm_lookup", "mode": "read"},
+        {"name": "crm_update", "mode": "write"},
+        {"name": "customer_note_search", "mode": "read"}
+      ],
+      "evidence": [
+        {
+          "evidence_id": "ev_mcp_redacted_manifest",
+          "source_type": "manual_note",
+          "summary": "Redacted MCP manifest summary reviewed for importer fixture coverage.",
+          "limitation": "No live MCP server handshake or auth scope export is attached.",
+          "satisfies": ["owner", "purpose", "action_summary", "crm_record_summary"]
+        }
+      ],
+      "unknowns": ["Exact authentication boundary is unknown.", "Tool allowlist enforcement is unknown."]
+    }
+  ]
+}

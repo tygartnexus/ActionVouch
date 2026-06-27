@@ -1,0 +1,34 @@
+{
+  "template_version": "actionvouch.make_summary.v1",
+  "redaction_confirmation": "Scenario IDs, account identifiers, tokens, customer names, invoice IDs, and payloads have been redacted.",
+  "platform": "Make",
+  "scenarios": [
+    {
+      "scenario_id": "make_invoice_followup_redacted",
+      "name": "Invoice Follow-Up Draft",
+      "owner": "Finance Operations",
+      "business_purpose": "Draft invoice follow-up messages when invoices remain unpaid after the configured threshold.",
+      "trigger_summary": "Redacted invoice aging condition.",
+      "tools": ["accounting_tool", "email_tool", "llm_tool"],
+      "data_classes": ["customer_pii", "financial"],
+      "action_classes": ["observe", "draft", "customer_message"],
+      "approval_expectations": "Human approval required before invoice follow-up is sent.",
+      "external_effects": ["May create customer-facing collection message draft"],
+      "modules": [
+        {"app": "Accounting", "operation": "watch_invoice_status"},
+        {"app": "LLM", "operation": "draft_followup"},
+        {"app": "Email", "operation": "create_draft"}
+      ],
+      "evidence": [
+        {
+          "evidence_id": "ev_make_redacted_export",
+          "source_type": "manual_note",
+          "summary": "Redacted Make scenario summary reviewed for importer fixture coverage.",
+          "limitation": "No live Make scenario or connection-scope export is attached.",
+          "satisfies": ["owner", "purpose", "action_summary", "customer_context"]
+        }
+      ],
+      "unknowns": ["Email module send capability is unknown.", "Accounting connector write scope is unknown."]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "template_version": "actionvouch.workspace_ai_usage.v1",
+  "redaction_confirmation": "Prompts, files, user identifiers, and sensitive content have been summarized or redacted.",
+  "workspace": "Google Workspace or Microsoft 365",
+  "usage_patterns": [
+    {
+      "usage_id": "workspace_ai_customer_summary_1",
+      "name": "Document Summary Assistant",
+      "owner": "Operations Lead",
+      "business_purpose": "Summarize internal documents for staff review.",
+      "tools": ["workspace_ai", "document_storage"],
+      "data_classes": ["customer_pii", "legal"],
+      "action_classes": ["observe", "draft", "file_share"],
+      "approval_expectations": "Human approval required before sharing generated summaries.",
+      "external_effects": ["May create or share a document if permissions allow"],
+      "evidence": [
+        {
+          "evidence_id": "workspace_owner_summary_1",
+          "source_type": "owner_statement",
+          "summary": "Owner-provided workspace AI usage summary.",
+          "limitation": "No admin export reviewed."
+        }
+      ],
+      "unknowns": ["Whether generated summaries inherit source document sharing settings is unknown."]
+    }
+  ]
+}
