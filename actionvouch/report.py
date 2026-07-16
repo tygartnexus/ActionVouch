@@ -89,6 +89,7 @@ def build_report(project: AuditProject) -> dict[str, Any]:
             "confidence_score": confidence,
             "autonomy_counts": _autonomy_counts(project),
             "protocol_counts": _protocol_counts(project),
+            "discovery": _discovery_summary(project),
             "response_mode": response_mode.value,
             "response_mode_label": quality_contract.to_dict()["ui_label"],
             "permission_graph": (
@@ -126,12 +127,19 @@ def render_json_report(project: AuditProject) -> str:
 
 def render_markdown_report(project: AuditProject) -> str:
     report = build_report(project)
+    disc = report["summary"]["discovery"]
+    discovery_line = (
+        f"> **Discovery:** {_md(disc['note'])}"
+        if disc["discovered_agent_count"] > 0
+        else ""
+    )
     lines = [
         f"# ActionVouch Risk Audit Report: {_md(report['project']['name'])}",
         "",
         f"Status: `{report['status']}`",
         f"Confidence: `{report['summary']['confidence_score']:.2f}`",
         f"Response mode: `{report['summary']['response_mode']}` ({report['summary']['response_mode_label']})",
+        *([discovery_line, ""] if discovery_line else []),
         "",
         "## Executive Summary",
         "",
@@ -292,6 +300,34 @@ def _confidence(
     base = sum(finding.confidence_score for finding in findings) / len(findings)
     gap_penalty = min(0.25, _evidence_gap_count(project, findings) * 0.03)
     return max(0.3, min(0.9, base - gap_penalty))
+
+
+_DISCOVERED_STATUS = "discovered_needs_review"
+
+
+def _discovery_summary(project: AuditProject) -> dict[str, Any]:
+    """Surface that some/all agents came from a machine scan and are unreviewed.
+
+    A discovered draft has every agent's owner/purpose/permissions as ``unknown``;
+    this makes the audit say so up front rather than presenting an unreviewed
+    auto-inventory as if it were a vetted one.
+    """
+
+    discovered = sum(
+        1 for agent in project.agents if agent.status == _DISCOVERED_STATUS
+    )
+    total = len(project.agents)
+    if discovered == 0:
+        return {"discovered_agent_count": 0, "is_discovery_draft": False, "note": ""}
+    return {
+        "discovered_agent_count": discovered,
+        "is_discovery_draft": discovered == total,
+        "note": (
+            f"{discovered} of {total} agent(s) were machine-discovered and still "
+            "need a human to confirm owner, purpose, and permissions before this "
+            "is treated as a reviewed inventory."
+        ),
+    }
 
 
 def _autonomy_counts(project: AuditProject) -> dict[str, int]:

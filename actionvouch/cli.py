@@ -26,6 +26,7 @@ from .browser_smoke import (
 from .compliance import build_compliance_readiness_report, render_compliance_markdown
 from .console import render_editable_console_html
 from .dashboard import render_dashboard_html
+from .discover import discover_machine, render_review_worksheet
 from ._version import __version__
 from .app import DEFAULT_PORT, serve_app
 from .evidence_room import build_evidence_room, verify_evidence_room
@@ -74,6 +75,8 @@ def command_actionvouch(args: Any) -> dict[str, Any]:
         return _approvals_command(args)
     if args.actionvouch_action == "research-watch":
         return _research_watch_command(args)
+    if args.actionvouch_action == "discover":
+        return _discover_command(args)
 
     try:
         project = load_project(args.project_path)
@@ -443,6 +446,37 @@ def _research_watch_command(args: Any) -> dict[str, Any]:
     return result
 
 
+def _discover_command(args: Any) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {
+        "deep": getattr(args, "deep", False),
+        "scan_source": getattr(args, "source", False),
+        "include_removable": getattr(args, "include_removable", False),
+        "include_network": getattr(args, "include_network", False),
+        "save_path": args.output or None,
+    }
+    if getattr(args, "max_files", 0):
+        kwargs["max_total_files"] = args.max_files
+    if getattr(args, "max_seconds", 0.0):
+        kwargs["max_seconds"] = args.max_seconds
+    result = discover_machine(**kwargs)
+    response: dict[str, Any] = {
+        "status": "discovered",
+        "valid": True,
+        "draft_valid": result.draft_valid,
+        "draft_project_path": result.draft_project_path,
+        "stats": result.stats,
+        "warning_count": len(result.warnings),
+        "discovery": result.to_dict(),
+    }
+    worksheet_path = getattr(args, "worksheet", "")
+    if worksheet_path:
+        path = Path(worksheet_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(render_review_worksheet(result.draft_project), encoding="utf-8")
+        response["worksheet_path"] = str(path)
+    return response
+
+
 def _permission_graph_command(args: Any, project: Any) -> dict[str, Any]:
     errors = project.validate()
     graph = None if errors else build_permission_graph(project)
@@ -509,7 +543,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Local-first ActionVouch audit: validate, score, report, dashboard, "
             "console, import, compliance, evidence-room, permission-graph, "
-            "research-watch, and approvals. No live external actions."
+            "research-watch, discover, and approvals. No live external actions."
         ),
     )
     parser.add_argument(
@@ -742,6 +776,50 @@ def build_parser() -> argparse.ArgumentParser:
     approvals_review.add_argument("--reviewed-at", default="")
     approvals_review.add_argument("--note", default="")
     approvals_review.add_argument("--output", default="")
+
+    discover_p = sub.add_parser(
+        "discover",
+        help="Auto-build a DRAFT agent inventory by reading the agent/MCP config "
+        "locations on this machine (editor/app configs + dev/project folders on "
+        "every drive). Fast, complete, local, read-only.",
+    )
+    discover_p.add_argument(
+        "--output", default="", help="Where to save the draft inventory JSON."
+    )
+    discover_p.add_argument(
+        "--deep",
+        action="store_true",
+        help="Exhaustively crawl every fixed drive (slow - can take many minutes; "
+        "rarely needed: the default already finds config-registered agents).",
+    )
+    discover_p.add_argument(
+        "--source",
+        action="store_true",
+        help="Also read source files for code-defined agents (slow on drives; "
+        "default reads MCP/editor configs + .env only).",
+    )
+    discover_p.add_argument(
+        "--include-removable",
+        action="store_true",
+        help="With --deep, also scan removable drives (default: off).",
+    )
+    discover_p.add_argument(
+        "--include-network",
+        action="store_true",
+        help="Also scan network drives (default: off).",
+    )
+    discover_p.add_argument(
+        "--max-files", type=int, default=0, help="Total file budget (0 = default)."
+    )
+    discover_p.add_argument(
+        "--max-seconds", type=float, default=0.0, help="Time budget (0 = default)."
+    )
+    discover_p.add_argument(
+        "--worksheet",
+        default="",
+        help="Also write a human review worksheet (Markdown) to this path - one "
+        "checklist row per discovered agent (owner, purpose, permissions to fill in).",
+    )
 
     return parser
 

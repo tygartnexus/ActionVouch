@@ -18,6 +18,10 @@ def render_dashboard_html(project: AuditProject) -> str:
         ("Action Events", report["summary"]["action_event_count"]),
         ("Risk Findings", report["summary"]["risk_finding_count"]),
         ("Evidence Gaps", report["summary"]["evidence_gap_count"]),
+        (
+            "Discovered (unreviewed)",
+            report["summary"]["discovery"]["discovered_agent_count"],
+        ),
         ("Confidence", f"{report['summary']['confidence_score']:.2f}"),
         (
             "Act With Approval",
@@ -77,6 +81,12 @@ def render_dashboard_html(project: AuditProject) -> str:
     mode_rules = "\n".join(
         f"<li>{escape(item)}</li>"
         for item in report["response_quality"].get("output_rules", [])
+    )
+    disc = report["summary"]["discovery"]
+    discovery_banner = (
+        f'<p class="discovery-banner">⚠ {escape(disc["note"])}</p>'
+        if disc["discovered_agent_count"] > 0
+        else ""
     )
     return f"""<!doctype html>
 <html lang="en">
@@ -168,6 +178,14 @@ def render_dashboard_html(project: AuditProject) -> str:
       border-radius: 8px;
       padding: 16px;
     }}
+    .discovery-banner {{
+      background: #fdf1df;
+      border: 1px solid #e2b269;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #8a5a00;
+      font-weight: 600;
+    }}
   </style>
 </head>
 <body>
@@ -175,6 +193,7 @@ def render_dashboard_html(project: AuditProject) -> str:
     <h1>ActionVouch Dashboard</h1>
     <p><strong>{escape(project.name)}</strong> <span class="status">{escape(report['status'])}</span></p>
     <p>Response mode: <span class="mode-badge">{escape(str(report['summary']['response_mode_label']))}</span></p>
+    {discovery_banner}
     <p>{escape(project.scope)}</p>
   </header>
   <main>

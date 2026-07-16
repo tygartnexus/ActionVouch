@@ -25,6 +25,7 @@ itself, with safer wording for each.
 | The self-serve app has a guided wizard (no JSON editing). | Tested locally | `/api/schema`, the wizard in `app_ui.py`, the Playwright wizard test | A non-technical user can build a valid audit through guided forms driven by the tool's own validation rules. |
 | ActionVouch can be packaged as a one-file desktop executable. | Built and verified | `packaging/actionvouch.spec`, `actionvouch/launcher.py`; a built binary that launched and served locally | ActionVouch can be packaged as a one-file executable so a non-developer can run the self-serve app without installing Python. |
 | The local self-serve server passed an internal adversarial red-team. | Documented (internal review) | Internal review documentation (not included in this repository) | The local app server was internally security-reviewed (no critical findings; the one HIGH was fixed); this is an internal review, not a third-party assessment. |
+| ActionVouch discovers agent/MCP wiring on the local machine and reconciles it against the declared inventory. | Tested locally | `actionvouch discover`, `actionvouch/discover.py` and `reconcile.py`, `tests/test_discover.py` | ActionVouch can heuristically enumerate agent/MCP configuration found on the local machine (read-only, no network, nothing executed) and flag items missing from the declared inventory as draft findings for human review; discovery is heuristic, not exhaustive. |
 
 ## Blocked Claims
 

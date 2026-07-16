@@ -54,6 +54,11 @@ actionvouch browser-smoke  examples/actionvouch/sample_project.json --output-dir
 # (never starts a server, calls tools/list, reads env values, or hits the network)
 actionvouch mcp-scan examples/actionvouch/mcp_manifests/write_destructive_crm_server.json --format markdown
 
+# discover agent/MCP wiring on this machine and draft an inventory for review
+# (read-only and heuristic: walks known agent/MCP config locations, executes
+# nothing, makes no network calls; the draft needs human review)
+actionvouch discover --output draft-inventory.json --worksheet review-worksheet.md
+
 # re-verify an evidence room's manifest SHA-256 hashes
 actionvouch verify-evidence-room evidence-room
 
@@ -102,6 +107,8 @@ actionvouch/              # application package
   app_ui.py               #   the guided-wizard single-page UI served by app.py
   browser_smoke.py        #   optional real-browser (Playwright) smoke runner
   mcp_scan.py             #   read-only MCP manifest / tool-scope scanner
+  discover.py             #   machine-wide agent/MCP config discovery (draft inventory)
+  reconcile.py            #   omission detector: observed tool surface vs declared inventory
   smoke.py                #   static, no-deps HTML source smoke checks
   paths.py                #   vendored path constants (PROJECT_ROOT, bundled docs)
   response_quality.py     #   vendored response-quality contract
