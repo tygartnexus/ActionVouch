@@ -297,3 +297,181 @@ def test_empty_machine_yields_empty_draft_flagged_invalid(tmp_path):
     assert result.observed.items == ()
     assert result.draft_project.agents == []
     assert result.draft_valid is False
+
+
+# --------------------------------------------------------------------------- #
+# Improvement 1: ephemeral / session / cache dir filter
+# --------------------------------------------------------------------------- #
+def test_discover_skips_ephemeral_session_and_cache_dirs(tmp_path):
+    # Per-run COPIES of wiring inside session / cache dirs must not be reported as
+    # standing agents; only the operator's real, standing config should surface.
+    machine = tmp_path / "m"
+    _write(machine, ".mcp.json", json.dumps({"mcpServers": {"standing_server": {}}}))
+    _write(
+        machine,
+        "local-agent-mode-sessions/uuid1/rpm/plugin_abc/.mcp.json",
+        json.dumps({"mcpServers": {"session_snapshot_server": {}}}),
+    )
+    _write(
+        machine,
+        "GPUCache/.mcp.json",
+        json.dumps({"mcpServers": {"cache_snapshot_server": {}}}),
+    )
+    result = discover_machine(roots=[ScanRoot(str(machine), "t")])
+    names = {item.name for item in result.observed.items}
+    assert "standing_server" in names
+    assert "session_snapshot_server" not in names  # acceptance: offender is gone
+    assert "cache_snapshot_server" not in names
+
+
+# --------------------------------------------------------------------------- #
+# Improvement 2: cross-config MCP-server dedup
+# --------------------------------------------------------------------------- #
+def test_discover_dedupes_same_mcp_server_across_configs(tmp_path):
+    # The SAME server (identical command/args) registered under two roots with
+    # DIFFERENT config keys is one distinct server; a genuinely different command
+    # stays separate.
+    root_a = tmp_path / "a"
+    root_b = tmp_path / "b"
+    same_spec = {"command": "npx", "args": ["-y", "@vendor/mcp-server"]}
+    _write(root_a, ".mcp.json", json.dumps({"mcpServers": {"alias_one": same_spec}}))
+    _write(root_b, ".mcp.json", json.dumps({"mcpServers": {"alias_two": same_spec}}))
+    _write(
+        root_b,
+        "other/.mcp.json",
+        json.dumps(
+            {
+                "mcpServers": {
+                    "different": {"command": "npx", "args": ["-y", "@vendor/other"]}
+                }
+            }
+        ),
+    )
+    result = discover_machine(
+        roots=[ScanRoot(str(root_a), "ta"), ScanRoot(str(root_b), "tb")]
+    )
+    servers = [item for item in result.observed.items if item.kind == "mcp_server"]
+    names = {item.name for item in servers}
+    # alias_one/alias_two collapse to one; "different" survives on its own.
+    assert len(servers) == 2, names
+    assert "different" in names
+    assert result.stats["discovered_tools"] == 2
+
+
+def test_discover_does_not_over_collapse_empty_spec_servers(tmp_path):
+    # Two DIFFERENT servers with no command/url (empty spec) have no signature and
+    # must fall back to name-based identity, i.e. NOT be merged into one.
+    machine = tmp_path / "m"
+    _write(
+        machine,
+        ".mcp.json",
+        json.dumps({"mcpServers": {"server_alpha": {}, "server_beta": {}}}),
+    )
+    result = discover_machine(roots=[ScanRoot(str(machine), "t")])
+    names = {item.name for item in result.observed.items if item.kind == "mcp_server"}
+    assert names == {"server_alpha", "server_beta"}
+
+
+# --------------------------------------------------------------------------- #
+# Improvement 3: severity calibration for discovery-sourced findings
+# --------------------------------------------------------------------------- #
+def test_discovered_plain_mcp_server_scores_review_first_medium(tmp_path):
+    # A plain external MCP server (no destructive/financial/messaging capability)
+    # is a review-first MEDIUM under discovery calibration - not blanket critical
+    # just because it has no attested owner.
+    machine = tmp_path / "m"
+    _write(machine, ".mcp.json", json.dumps({"mcpServers": {"plain_server": {}}}))
+    project = discover_machine(roots=[ScanRoot(str(machine), "t")]).draft_project
+    findings = score_project(project)
+    assert findings  # still surfaced for review
+    assert {f.severity for f in findings} == {"medium"}
+
+
+def test_discovered_risky_surface_stays_elevated(tmp_path):
+    # Genuinely dangerous observed capability keeps a high/critical severity even
+    # under calibration: payments -> critical, messaging -> high.
+    machine = tmp_path / "m"
+    _write(machine, "pay/.env", "STRIPE_SECRET_KEY=sk_live_x\n")
+    _write(machine, "msg/tools.py", "@tool\ndef send_email(x):\n    ...\n")
+    project = discover_machine(
+        roots=[ScanRoot(str(machine), "t")], scan_source=True
+    ).draft_project
+    severities = {f.severity for f in score_project(project)}
+    assert "critical" in severities  # stripe -> payment_refund/finance_action
+    assert "high" in severities  # send_email -> customer_message
+
+
+def test_discovery_calibration_scoped_to_discovered_records():
+    # Two tools with an IDENTICAL risk shape; only the discovery marker differs.
+    # The declared tool keeps its normal critical severity; the discovered one is
+    # calibrated down to review-first medium. Proves declared scoring is untouched.
+    from actionvouch.models import (
+        DISCOVERED_TOOL_PERMISSION_TYPE,
+        AuditProject,
+        EvidenceItem,
+        ToolRecord,
+    )
+
+    ev = EvidenceItem(
+        evidence_id="ev1",
+        source_type="owner_statement",
+        summary="declared",
+        source_ref="ref",
+    )
+    common = dict(
+        name="notes",
+        system="sys",
+        data_access=["unknown"],
+        actions_supported=["external_api_call"],
+        external_effect=True,
+        credential_owner="unknown",
+        risk_level="unknown",
+        connector_type="mcp",
+        mcp_server_id="notes",
+        evidence=["ev1"],
+    )
+    declared = ToolRecord(tool_id="declared_tool", permission_type="unknown", **common)
+    discovered = ToolRecord(
+        tool_id="discovered_tool",
+        permission_type=DISCOVERED_TOOL_PERMISSION_TYPE,
+        **common,
+    )
+    project = AuditProject(
+        project_id="declared_audit",
+        name="n",
+        version="actionvouch.audit_project.v1",
+        created_at="",
+        updated_at="",
+        scope="s",
+        agents=[],
+        tools=[declared, discovered],
+        policies=[],
+        action_events=[],
+        evidence=[ev],
+    )
+    severity = {f.affected_record_id: f.severity for f in score_project(project)}
+    assert severity["declared_tool"] == "critical"  # unchanged declared scoring
+    assert severity["discovered_tool"] == "medium"  # calibrated down
+
+
+def test_discovery_score_distribution_is_triage_useful(tmp_path):
+    # A realistic mix (several plain servers + one payments + one messaging) must
+    # NOT be ~100% critical/high; it should have a usable medium baseline while
+    # keeping the genuinely risky items elevated.
+    machine = tmp_path / "m"
+    for index in range(4):
+        _write(
+            machine,
+            f"svc{index}/.mcp.json",
+            json.dumps({"mcpServers": {f"plain_{index}": {}}}),
+        )
+    _write(machine, "pay/.env", "STRIPE_SECRET_KEY=sk_live_x\n")
+    _write(machine, "msg/tools.py", "@tool\ndef send_message(x):\n    ...\n")
+    project = discover_machine(
+        roots=[ScanRoot(str(machine), "t")], scan_source=True
+    ).draft_project
+    severities = [f.severity for f in score_project(project)]
+    critical_high = sum(1 for s in severities if s in {"critical", "high"})
+    assert "medium" in severities  # triage baseline present
+    assert critical_high < len(severities)  # NOT ~100% critical/high
+    assert "critical" in severities and "high" in severities  # risky still elevated

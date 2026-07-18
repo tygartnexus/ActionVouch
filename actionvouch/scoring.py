@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from .models import (
     AUTONOMY_LEVELS,
     COMPLIANCE_ACTION_CLASSES,
     DESTRUCTIVE_ACTION_CLASSES,
+    DISCOVERED_AGENT_STATUS,
+    DISCOVERED_TOOL_PERMISSION_TYPE,
     HIGH_RISK_ACTION_CLASSES,
     SENSITIVE_DATA_CLASSES,
     ActionEvent,
@@ -22,16 +26,65 @@ def score_project(project: AuditProject) -> list[RiskFinding]:
     for agent in project.agents:
         finding = _score_agent(project, agent)
         if finding:
-            findings.append(finding)
+            findings.append(_calibrate_discovery_finding(finding, agent=agent))
     for tool in project.tools:
         finding = _score_tool(tool)
         if finding:
-            findings.append(finding)
+            findings.append(_calibrate_discovery_finding(finding, tool=tool))
     for event in project.action_events:
         finding = _score_event(project, event)
         if finding:
             findings.append(finding)
     return sorted(findings, key=lambda item: _severity_sort(item.severity))
+
+
+# Bare "external_api_call" is the DEFAULT placeholder assigned to any discovered
+# external surface (discover._tool_from_item), not evidence of a specific
+# dangerous capability, so on its own it must NOT elevate a discovery finding.
+_DISCOVERY_ELEVATING_ACTIONS = HIGH_RISK_ACTION_CLASSES - {"external_api_call"}
+
+
+def _discovery_severity(action_classes: set[str]) -> str:
+    """Triage-first severity for a DISCOVERY-sourced finding.
+
+    Discovered surface has no attested owner by construction; making everything
+    critical/high on that basis alone is non-triage. Severity instead tracks the
+    OBSERVED capability: destructive/financial surface is genuinely dangerous
+    (critical); other real external-effect classes stay high; everything else
+    (including the bare external_api_call placeholder and observe/draft) is a
+    review-first medium so the operator has a usable distribution to work down.
+    """
+
+    if action_classes & DESTRUCTIVE_ACTION_CLASSES:
+        return "critical"
+    if action_classes & _DISCOVERY_ELEVATING_ACTIONS:
+        return "high"
+    return "medium"
+
+
+def _calibrate_discovery_finding(
+    finding: RiskFinding,
+    *,
+    agent: AgentRecord | None = None,
+    tool: ToolRecord | None = None,
+) -> RiskFinding:
+    """Recalibrate severity for DISCOVERY-sourced findings, and them only.
+
+    Scoping is by the per-record discovery marker written by
+    discover.build_draft_project (agent.status / tool.permission_type). A DECLARED
+    audit record carries neither marker, so its finding is returned unchanged -
+    normal declared-audit scoring is fully preserved.
+    """
+
+    if agent is not None and agent.status == DISCOVERED_AGENT_STATUS:
+        severity = _discovery_severity(set(agent.action_classes))
+    elif tool is not None and tool.permission_type == DISCOVERED_TOOL_PERMISSION_TYPE:
+        severity = _discovery_severity(set(tool.actions_supported))
+    else:
+        return finding
+    if severity == finding.severity:
+        return finding
+    return replace(finding, severity=severity)
 
 
 def _score_agent(project: AuditProject, agent: AgentRecord) -> RiskFinding | None:

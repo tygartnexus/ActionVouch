@@ -109,6 +109,16 @@ DESTRUCTIVE_ACTION_CLASSES = {"file_delete", "payment_refund", "finance_action"}
 
 COMPLIANCE_ACTION_CLASSES = {"compliance_sensitive_claim", "legal_sensitive_claim"}
 
+# Provenance markers for machine-DISCOVERED (observed, unverified) records, as
+# opposed to operator-DECLARED inventory. Discovered surface has no attested
+# owner by construction, so the risk scorer calibrates DISCOVERY-sourced findings
+# to a triage-first severity baseline (see scoring._calibrate_discovery_finding)
+# WITHOUT changing declared-audit scoring. These constants are the single source
+# of truth for those markers, shared by discover.py and scoring.py.
+DISCOVERED_DRAFT_PROJECT_ID = "actionvouch_discovered_draft"
+DISCOVERED_AGENT_STATUS = "discovered_needs_review"
+DISCOVERED_TOOL_PERMISSION_TYPE = "unknown_discovered"
+
 
 class ValidationError(ValueError):
     """Raised when ActionVouch input fails closed validation."""

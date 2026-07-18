@@ -29,6 +29,9 @@ from typing import Any, Callable, Mapping
 
 from .models import (
     ACTION_CLASSES,
+    DISCOVERED_AGENT_STATUS,
+    DISCOVERED_DRAFT_PROJECT_ID,
+    DISCOVERED_TOOL_PERMISSION_TYPE,
     AgentRecord,
     AuditProject,
     EvidenceItem,
@@ -40,6 +43,7 @@ from .reconcile import (
     _SOURCE_SUFFIXES,
     ObservedItem,
     ObservedSurface,
+    _dedupe_items,
     _slug,
     combine_surfaces,
     scan_codebase,
@@ -82,11 +86,34 @@ _SYSTEM_DIRS = frozenset(
         "Windows.old",
     }
 )
-_DISCOVERY_IGNORED = _IGNORED_DIRS | _SYSTEM_DIRS
+# Transient session / agent-mode / cache directories. These hold per-run COPIES
+# of plugin + MCP wiring (or pure runtime cache) rather than a standing agent the
+# operator manages, so reporting them inflates the surface with throwaway
+# snapshots. On a real machine 'local-agent-mode-sessions' alone accounted for 68
+# of 77 discovered surfaces. This is DISCOVERY-only: reconcile's declared-audit
+# scan keeps the reconcile._IGNORED_DIRS default and is unaffected. Matched by
+# exact directory name (as _walk_files does), which also skips their children
+# (e.g. the offending .../local-agent-mode-sessions/<uuid>/rpm/plugin_* configs).
+_EPHEMERAL_DIRS = frozenset(
+    {
+        "local-agent-mode-sessions",
+        "claude-code-sessions",
+        "Cache",
+        "Code Cache",
+        "GPUCache",
+        "DawnGraphiteCache",
+        "DawnWebGPUCache",
+        "blob_storage",
+        "Crashpad",
+        "sentry",
+    }
+)
+_DISCOVERY_IGNORED = _IGNORED_DIRS | _SYSTEM_DIRS | _EPHEMERAL_DIRS
 
 # Status marker for an agent surface that was machine-discovered and still needs a
 # human to confirm owner, purpose, and permissions before it is an audited entry.
-_DISCOVERED_STATUS = "discovered_needs_review"
+# Canonical value lives in models so the risk scorer can recognise discovered records.
+_DISCOVERED_STATUS = DISCOVERED_AGENT_STATUS
 
 # Global safety budgets. Machine-wide scanning multiplies cost, so cap total
 # files, wall-clock time, and per-root files; stop gracefully and record a
@@ -405,7 +432,11 @@ def discover_machine(
                 }
             )
 
-    combined = combine_surfaces(*surfaces)
+    # combine_surfaces already collapses by (kind, name); this second pass
+    # additionally collapses the SAME MCP server registered under multiple
+    # roots/aliases (same normalized command/args/url) so discovered_tools counts
+    # DISTINCT servers, not one row per config it happens to appear in.
+    combined = _dedupe_cross_config(combine_surfaces(*surfaces))
     project = build_draft_project(combined, timestamp=timestamp)
     validation_errors = tuple(project.validate())
     draft_path = ""
@@ -439,6 +470,31 @@ def discover_machine(
         warnings=tuple(warnings),
         stats=stats,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Cross-config dedup
+# --------------------------------------------------------------------------- #
+def _discovery_dedup_key(item: ObservedItem) -> tuple[str, str]:
+    """Dedup key that collapses cross-config MCP-server aliases.
+
+    An mcp_server with a captured command/args/url identity is keyed by that
+    identity, so two configs that launch the same server (under different keys)
+    count once. Everything else - including an empty-spec server with no identity
+    - keys by ``(kind, name)``, matching the base dedup, so distinct servers are
+    never over-collapsed.
+    """
+
+    if item.kind == "mcp_server" and item.identity:
+        return ("mcp_server", item.identity)
+    return (item.kind, item.name)
+
+
+def _dedupe_cross_config(surface: ObservedSurface) -> ObservedSurface:
+    deduped = _dedupe_items(list(surface.items), key=_discovery_dedup_key)
+    if len(deduped) == len(surface.items):
+        return surface
+    return replace(surface, items=deduped)
 
 
 # --------------------------------------------------------------------------- #
@@ -508,7 +564,7 @@ def build_draft_project(
         )
     ]
     return AuditProject(
-        project_id="actionvouch_discovered_draft",
+        project_id=DISCOVERED_DRAFT_PROJECT_ID,
         name="ActionVouch Discovered Inventory (DRAFT)",
         version="actionvouch.audit_project.v1",
         created_at=timestamp,
@@ -665,7 +721,7 @@ def _tool_from_item(
         tool_id=tool_id,
         name=item.name,
         system=location,
-        permission_type="unknown_discovered",
+        permission_type=DISCOVERED_TOOL_PERMISSION_TYPE,
         data_access=["unknown"],
         actions_supported=actions,
         external_effect=external,

@@ -230,6 +230,12 @@ class ObservedItem:
     source_ref: str
     detail: str = ""
     implied_actions: tuple[str, ...] = ()
+    # Stable cross-config identity for an mcp_server (normalized command/args or
+    # url); "" otherwise. Used ONLY as a dedup key so the SAME server registered
+    # under different roots/names collapses to one. It is deliberately NOT part of
+    # to_dict(): it is an internal dedup key, not report output, so serialized
+    # reconcile/discovery reports are unchanged.
+    identity: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -617,9 +623,34 @@ def _scan_json_for_mcp(path: Path, rel: str, text: str) -> list[ObservedItem]:
                 source_ref=rel,
                 detail=detail,
                 implied_actions=("external_api_call",),
+                identity=_mcp_identity(spec),
             )
         )
     return items
+
+
+def _mcp_identity(spec: Any) -> str:
+    """Stable cross-config identity for an MCP server spec.
+
+    Returns the server's URL (remote) or its normalized ``command`` + ``args``
+    (local), slugged. Two configs that launch the SAME server share this identity
+    even when registered under different keys, so discovery can collapse the
+    duplicate instead of counting it twice. Returns ``""`` when the spec carries
+    no command/url (e.g. an empty ``{}``), so such servers fall back to name-based
+    identity and are never over-collapsed together.
+    """
+
+    if not isinstance(spec, dict):
+        return ""
+    url = spec.get("url")
+    if isinstance(url, str) and url.strip():
+        return _slug(url)
+    command = spec.get("command")
+    command_str = command.strip() if isinstance(command, str) else ""
+    args = spec.get("args")
+    args_str = " ".join(str(arg) for arg in args) if isinstance(args, list) else ""
+    combined = f"{command_str} {args_str}".strip()
+    return _slug(combined) if combined else ""
 
 
 def _mcp_servers_block(path: Path, data: dict[str, Any]) -> dict[str, Any]:
@@ -888,14 +919,27 @@ def _canonical_action(action: str) -> str:
     return implied[0] if implied else slug
 
 
-def _dedupe_items(items: list[ObservedItem]) -> tuple[ObservedItem, ...]:
+def _dedupe_items(
+    items: list[ObservedItem],
+    *,
+    key: "Callable[[ObservedItem], tuple[str, str]] | None" = None,
+) -> tuple[ObservedItem, ...]:
+    """Drop duplicate observed items, keeping first occurrence.
+
+    The default key is ``(kind, name)`` (unchanged for existing callers). Discovery
+    passes a ``key`` that collapses an mcp_server by its normalized command/args/url
+    identity, so the SAME server registered under multiple roots/aliases is counted
+    once.
+    """
+
+    key_fn = key or (lambda item: (item.kind, item.name))
     seen: set[tuple[str, str]] = set()
     out: list[ObservedItem] = []
     for item in items:
-        key = (item.kind, item.name)
-        if key in seen:
+        item_key = key_fn(item)
+        if item_key in seen:
             continue
-        seen.add(key)
+        seen.add(item_key)
         out.append(item)
     return tuple(out)
 
