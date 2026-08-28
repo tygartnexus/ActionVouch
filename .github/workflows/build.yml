@@ -3,6 +3,12 @@ name: Build executables
 # Builds the one-file ActionVouch desktop app on each OS and uploads the
 # binaries as artifacts. Code signing runs only when the relevant secrets are
 # configured (see packaging/README.md); without them the binaries are unsigned.
+#
+# Every build is gated on the full CI suite first (see gate.yml). Without that,
+# a tag push ran this workflow ALONE - ci.yml triggers only on `push: main` and
+# `pull_request` - so v0.2.0 and v0.2.1 shipped executables while CI was red.
+# The per-binary smoke test below starts the app but runs none of the tests, so
+# it cannot catch that on its own.
 
 on:
   workflow_dispatch:
@@ -14,7 +20,13 @@ permissions:
   contents: read
 
 jobs:
+  # Run the identical gate CI runs. A tag push must not produce a release
+  # artifact from a tree that fails lint, types, tests, or the verifier.
+  gate:
+    uses: ./.github/workflows/gate.yml
+
   build:
+    needs: gate
     strategy:
       fail-fast: false
       matrix:

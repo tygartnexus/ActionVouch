@@ -1,0 +1,38 @@
+name: Gate
+
+# The quality gate - lint, format, types, tests, and the verification harness.
+#
+# Extracted as a reusable workflow so the release build runs the SAME gate CI
+# does. build.yml previously triggered on `push: tags` alone, and ci.yml only on
+# `push: main` / `pull_request`, so a tag push ran no checks whatsoever: v0.2.0
+# and v0.2.1 both shipped executables on top of a red CI with nothing objecting.
+
+on:
+  workflow_call:
+
+# Least privilege: the gate only needs to read the repo.
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install (dev extra)
+        run: python -m pip install -e ".[dev]"
+      - name: Install Chromium (for the browser/wizard tests)
+        run: python -m playwright install --with-deps chromium
+      - name: Lint
+        run: python -m ruff check actionvouch tests
+      - name: Format check
+        run: python -m black --check actionvouch tests
+      - name: Type check
+        run: python -m mypy actionvouch
+      - name: Tests
+        run: python -m pytest -q
+      - name: Verification harness (core + browser)
+        run: python verify_actionvouch.py --include-browser
