@@ -7,6 +7,8 @@ machine - they scan small synthetic "machine" trees under tmp_path.
 from __future__ import annotations
 
 import json
+import ntpath
+import posixpath
 from pathlib import Path
 
 from actionvouch.discover import (
@@ -280,13 +282,33 @@ def test_within_handles_drive_roots_and_escapes():
     # Regression: a drive root like "C:\\" has a trailing separator; children must
     # count as within it (else drive scans silently find nothing), while a path on
     # another drive must not.
+    #
+    # The Windows flavour is passed explicitly. Left to the host default these
+    # assertions only mean something on a Windows machine: on the Linux CI runner a
+    # backslash is an ordinary filename character, so r"C:\Users\x\proj" is a single
+    # path segment and every drive-root case collapses.
     from actionvouch.reconcile import _within
 
-    assert _within(r"C:\Users\x\proj", "C:\\") is True
-    assert _within(r"C:\Users", "C:\\") is True
-    assert _within(r"D:\other", "C:\\") is False
-    assert _within(r"E:\repo\sub", r"E:\repo") is True
-    assert _within(r"E:\repo_other", r"E:\repo") is False
+    assert _within(r"C:\Users\x\proj", "C:\\", ntpath) is True
+    assert _within(r"C:\Users", "C:\\", ntpath) is True
+    assert _within(r"D:\other", "C:\\", ntpath) is False
+    assert _within(r"E:\repo\sub", r"E:\repo", ntpath) is True
+    assert _within(r"E:\repo_other", r"E:\repo", ntpath) is False
+    # Case-insensitivity is part of the Windows contract.
+    assert _within(r"C:\USERS\x", r"c:\users", ntpath) is True
+
+
+def test_within_handles_posix_roots_and_escapes():
+    # The same containment properties on the POSIX flavour, including the "/" root
+    # that carries a trailing separator the way a drive root does.
+    from actionvouch.reconcile import _within
+
+    assert _within("/home/x/proj", "/", posixpath) is True
+    assert _within("/home/x/proj", "/home/x", posixpath) is True
+    assert _within("/home/x", "/home/x", posixpath) is True
+    assert _within("/home/x_other", "/home/x", posixpath) is False
+    # POSIX paths are case-SENSITIVE; a different case is a different path.
+    assert _within("/home/X/proj", "/home/x", posixpath) is False
 
 
 def test_empty_machine_yields_empty_draft_flagged_invalid(tmp_path):

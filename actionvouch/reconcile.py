@@ -24,6 +24,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Callable
 
 from .models import (
@@ -530,16 +531,22 @@ def _safe_resolve(path: Path) -> str | None:
         return None
 
 
-def _within(real: str, root_real: str) -> bool:
+def _within(real: str, root_real: str, pathmod: ModuleType = os.path) -> bool:
     # Robust to drive roots like "C:\\" (which carry a trailing separator) and to
     # case-insensitive Windows paths. commonpath raises ValueError across drives,
     # which correctly means "not within".
-    real_n = os.path.normcase(os.path.normpath(real))
-    root_n = os.path.normcase(os.path.normpath(root_real))
+    #
+    # Containment is path-FLAVOUR dependent, so the flavour is an explicit
+    # parameter defaulting to the host's (os.path). Tests inject ntpath/posixpath
+    # to assert both flavours on any platform: asserted against the default, the
+    # Windows drive-root cases are untestable on a Linux runner, where a backslash
+    # is an ordinary filename character rather than a path separator.
+    real_n = pathmod.normcase(pathmod.normpath(real))
+    root_n = pathmod.normcase(pathmod.normpath(root_real))
     if real_n == root_n:
         return True
     try:
-        return os.path.commonpath([real_n, root_n]) == root_n
+        return pathmod.commonpath([real_n, root_n]) == root_n
     except ValueError:
         return False
 
