@@ -78,3 +78,13 @@ extend-exclude = '''
   | dist
 )/
 '''
+
+[tool.ruff.lint]
+# Pin the rule set explicitly. Left unset, ruff lints with whatever its current
+# default selection happens to be - and that default is NOT stable across
+# releases: 0.16 widened it (adding I, UP, ISC, RUF, PL, PIE, S, TRY, C4), which
+# turned 71 pre-existing findings into a CI failure on an otherwise unchanged
+# tree. Because the dev extra floors ruff at >=0.3 without a ceiling, CI silently
+# picks up each new release. These four are the set this codebase was written and
+# reviewed against; widening it is a deliberate decision, not a version bump.
+select = ["E4", "E7", "E9", "F"]
