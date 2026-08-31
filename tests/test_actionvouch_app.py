@@ -261,6 +261,20 @@ def test_app_rejects_oversized_body(port, monkeypatch):
     assert status == 413
 
 
+def test_app_delivers_the_oversize_rejection_for_a_realistic_body(port, monkeypatch):
+    # Regression: choosing a 413 is not the same as DELIVERING one. Answering
+    # without reading the body leaves it unread on the socket, and closing that
+    # connection resets it - so the caller got ConnectionAbortedError instead of
+    # the rejection it was sent. The 1KB case above cannot catch this: the body
+    # has to be big enough to still be in flight when the server replies. Before
+    # the drain fix this failed 10/10 at 8MB (and ~5/10 at 4MB, which is what
+    # made the cross-origin test intermittently flaky).
+    monkeypatch.setattr(app_module, "MAX_BODY_BYTES", 16)
+    status, body = _post(port, "example", {"pad": "x" * (8 * 1024 * 1024)})
+    assert status == 413
+    assert body["error"] == "request body too large"
+
+
 def test_app_fails_closed_on_bad_input(port):
     # Wrong-typed project -> error -> 400, never a server crash.
     status, body = _post(port, "validate", {"project": {"agents": "not-a-list"}})
