@@ -46,6 +46,13 @@ from .scoring import score_project
 # A generous cap for an audit project pasted into the browser; rejects
 # memory-exhaustion attempts without limiting real use.
 MAX_BODY_BYTES = 8 * 1024 * 1024
+
+# How much of an unwanted request body we are willing to read and discard before
+# answering (see _AppHandler._drain_request_body), and the chunk size we do it
+# in. Deliberately NOT derived from MAX_BODY_BYTES: the point is to drain bodies
+# that EXCEED the cap, and tests lower the cap to exercise the 413 path.
+MAX_DRAIN_BYTES = 16 * 1024 * 1024
+DRAIN_CHUNK_BYTES = 64 * 1024
 DEFAULT_PORT = 8765
 # Exact hostnames that count as local. Compared after parsing out scheme/port/
 # brackets - a prefix match (e.g. "127.0.0.1.attacker.com") must NOT pass.
@@ -191,8 +198,45 @@ class _AppHandler(BaseHTTPRequestHandler):
         body = (json.dumps(payload) + "\n").encode("utf-8")
         self._send(code, body, "application/json; charset=utf-8")
 
+    def _drain_request_body(self) -> None:
+        """Read and discard the request body before an early-exit response.
+
+        Answering while the body is still unread leaves those bytes in the socket
+        receive buffer, and closing such a connection makes the OS reset it - so
+        the client raises ConnectionAbortedError instead of seeing the 403/413 it
+        was actually sent. That made the size-limit rejection undeliverable for
+        any realistic payload: a 9MB body against the 8MB cap failed every time,
+        and smaller bodies failed probabilistically (~50% at 4MB), which is what
+        made the cross-origin test flaky.
+
+        Discarded in fixed-size chunks, so draining costs bounded memory however
+        large the body is. A body past MAX_DRAIN_BYTES is abandoned rather than
+        read forever - a hostile client cannot use this to make us read without
+        limit; that connection just closes uncleanly, as it did before.
+        """
+        try:
+            remaining = int(self.headers.get("Content-Length") or 0)
+        except (TypeError, ValueError):
+            return
+        if remaining <= 0:
+            return
+        if remaining > MAX_DRAIN_BYTES:
+            self.close_connection = True
+            return
+        while remaining > 0:
+            try:
+                chunk = self.rfile.read(min(remaining, DRAIN_CHUNK_BYTES))
+            except OSError:
+                return
+            if not chunk:
+                return
+            remaining -= len(chunk)
+
     def _reject(self, code: int, message: str) -> None:
         print(f"actionvouch app: rejected request ({code} {message})", file=sys.stderr)
+        # Drain BEFORE replying: the rejection is only deliverable if nothing is
+        # left unread on the connection when it closes.
+        self._drain_request_body()
         self._send_json(code, {"error": message})
 
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
@@ -214,6 +258,7 @@ class _AppHandler(BaseHTTPRequestHandler):
             self._reject(403, "cross-origin request rejected")
             return
         if not self.path.startswith("/api/"):
+            self._drain_request_body()
             self._send_json(404, {"error": "not found"})
             return
         length = int(self.headers.get("Content-Length") or 0)
