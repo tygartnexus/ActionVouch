@@ -11,7 +11,13 @@ name: Build executables
 # it cannot catch that on its own.
 #
 # On a tag push the binaries are also attached to the GitHub Release (see the
-# `release` job) rather than being left as login-only, expiring run artifacts.
+# `release` job) rather than being left as login-only, expiring run artifacts,
+# and the pure-Python wheel is published to PyPI (see `publish-pypi`).
+#
+# PyPI is the primary channel, not a nicety. These executables are unsigned, and
+# an unsigned binary is actively blocked on a default Windows 11 install (Smart
+# App Control) and by macOS Gatekeeper. `pipx install actionvouch` involves no
+# code-signing trust decision at all, which is why it leads the README.
 
 on:
   workflow_dispatch:
@@ -27,6 +33,35 @@ jobs:
   # artifact from a tree that fails lint, types, tests, or the verifier.
   gate:
     uses: ./.github/workflows/gate.yml
+
+  # Publish the wheel + sdist to PyPI. ActionVouch is pure Python with no runtime
+  # dependencies, so one py3-none-any wheel serves every OS and architecture -
+  # including the Intel Macs the arm64 executable cannot run on at all.
+  #
+  # Uses PyPI Trusted Publishing (OIDC): no API token is stored in this repo.
+  # One-time setup on PyPI: Project -> Publishing -> add a GitHub publisher for
+  # tygartnexus/ActionVouch, workflow `build.yml`. Optionally scope it to an
+  # environment and add `environment:` here to require a reviewer per release.
+  publish-pypi:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: gate
+    runs-on: ubuntu-latest
+    permissions:
+      # OIDC identity for Trusted Publishing. Deliberately the ONLY permission:
+      # this job never needs to read or write repository contents.
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build wheel + sdist
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check dist/*
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   build:
     needs: gate

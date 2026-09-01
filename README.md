@@ -14,13 +14,50 @@ response-quality contract and path constants) is vendored directly under
 
 ## Install
 
+### From PyPI (recommended)
+
+```bash
+pipx install actionvouch
+```
+
+or `python -m pip install actionvouch`. ActionVouch is pure Python with **no
+runtime dependencies**, so a single wheel serves every OS and CPU, and your
+operating system is never asked to make a trust decision about an unsigned
+executable. This is the channel to use.
+
+### Prebuilt executable
+
+Every [release](https://github.com/tygartnexus/ActionVouch/releases) attaches a
+one-file executable per platform plus `SHA256SUMS.txt`. Verify the download
+before running it:
+
+```bash
+sha256sum --ignore-missing -c SHA256SUMS.txt   # macOS: shasum -a 256 -c
+```
+
+`--ignore-missing` checks whichever binaries you actually downloaded; without it,
+the entries for the other two platforms are reported as missing.
+
+**These executables are unsigned, and your OS will very likely refuse to run
+them.** Code signing is not yet set up (see
+[packaging/README.md](packaging/README.md)):
+
+| Platform | What you hit |
+|---|---|
+| **Windows** | Smart App Control — **on by default on clean Windows 11 installs** — blocks unsigned binaries outright. Confirmed against these exact artifacts. |
+| **macOS** | Unsigned and un-notarized, so Gatekeeper refuses it. The binary is also **arm64 only**: it will not run on an Intel Mac at all. |
+| **Linux** | No blocking, but the executable bit is not preserved by the download — `chmod +x ActionVouch-linux` first. |
+
+If you hit any of these, use the PyPI install above; it is unaffected.
+
+### From source
+
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-The shipped runtime uses the Python standard library alone. Real-browser smoke
-evidence is an **optional** extra (Playwright); it is never required to run an
-audit:
+Real-browser smoke evidence is an **optional** extra (Playwright); it is never
+required to run an audit:
 
 ```bash
 python -m pip install -e ".[browser]"
