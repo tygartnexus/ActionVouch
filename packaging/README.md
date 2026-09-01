@@ -68,8 +68,21 @@ binaries build unsigned.
 
 ## Notes
 
-- Unsigned binaries trip SmartScreen (Windows) and Gatekeeper (macOS); set the
-  signing secrets above (and obtain the certs) before distributing to customers.
+- **Signing is deliberately deferred; PyPI is the distribution channel.** These
+  binaries are a convenience for people who do not want a Python install, not the
+  supported path - `pipx install actionvouch` is, and it involves no code-signing
+  trust decision at all. Revisit signing when a customer actually asks for a
+  signed binary; the secrets above are wired for that day.
+- **Unsigned binaries are blocked, not merely warned about.** The distinction
+  matters and the earlier wording understated it:
+  - **Windows Smart App Control** refuses them outright, with no "run anyway".
+    It ships **enabled on clean Windows 11 installs**, so this is default
+    behaviour, not an enterprise policy - measured against the published v0.1.0
+    and v0.2.0 artifacts on a stock Windows 11 Pro machine, both blocked.
+  - **SmartScreen** is the weaker, separate mechanism: a prompt you can click
+    through. Do not plan around SmartScreen when Smart App Control is what fires.
+  - **macOS Gatekeeper** refuses unsigned, un-notarized binaries. The macOS
+    binary is additionally **arm64 only** and cannot run on an Intel Mac at all.
 - The local development environment may carry an obsolete `typing` backport in
   user site-packages that PyInstaller rejects; build in a clean venv or CI (the
   GitHub runners are clean).
